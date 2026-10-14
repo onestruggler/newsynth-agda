@@ -45,7 +45,11 @@ import Quantum.Synthesis.Newsynth
 import Quantum.Synthesis.QuadraticEquation
 import Quantum.Synthesis.Random
 import Quantum.Synthesis.Ring
+import Quantum.Synthesis.Ring.Cubic
 import Quantum.Synthesis.Ring.FixedPrec
+import Quantum.Synthesis.Ring.Localized
+import Quantum.Synthesis.Ring.Quadratic
+import Quantum.Synthesis.Ring.XiRings
 import Quantum.Synthesis.Ring.SymReal
 import Quantum.Synthesis.RotationDecomposition
 import Quantum.Synthesis.StepComp
@@ -56,11 +60,15 @@ import Quantum.Synthesis.ToReal
 import Quantum.Synthesis.Ring.Properties
 import Quantum.Synthesis.Ring.Properties.Common
 import Quantum.Synthesis.Ring.Properties.Cplx
+import Quantum.Synthesis.Ring.Properties.Cubic
 import Quantum.Synthesis.Ring.Properties.Dyadic
 import Quantum.Synthesis.Ring.Properties.Hom
+import Quantum.Synthesis.Ring.Properties.Localized
 import Quantum.Synthesis.Ring.Properties.Omega
 import Quantum.Synthesis.Ring.Properties.Poly
+import Quantum.Synthesis.Ring.Properties.Quadratic
 import Quantum.Synthesis.Ring.Properties.RootTwo
+import Quantum.Synthesis.Ring.Properties.XiRings
 import Quantum.Synthesis.Ring.Properties.Z2
 
 -- The gridsynth command line program (not --safe: uses FFI for
@@ -94,6 +102,8 @@ import Test.Ring
 import Test.RingProperties
 import Test.RotationDecompositionRun
 import Test.StepComp
+import Test.XiRings
+import Test.XiRingsTower
 
 -- Shared scalar arithmetic, congruences, Gaussian units and dyadic embeddings.
 import GauInt.Algebra

@@ -1153,6 +1153,24 @@ denomexp-by-search PBase {A} {B} e δA = record { denomexp = dexp ; denomexp-fac
     ... | zero = zero
     ... | suc n = search (e Nat.∸ 1) (e * n + 1) (a * δA ^ (e * n + 1))
 
+-- Build a DenomExp instance for a base ξ that generates a totally
+-- ramified prime: (ξ)ᵈ = (p) in the ring of integers B, for a rational
+-- prime p with an instance (tag PBase). This is the situation of the
+-- ξ-rings ℛ = {z/ξᵏ : z ∈ B} (Kliuchnikov–Schönnenbeck, Definition 2.3).
+-- If a = X/pⁿ with n the least p-exponent and n > 0, then p ∤ X, so ξ
+-- divides X some number ν < d of times, and the least ξ-exponent of a
+-- is dn - ν. The argument ν must compute this valuation for numerators
+-- not divisible by p (it is not called otherwise), and factor must
+-- multiply by ξᵏ.
+denomexp-ramified : {Base : Set} (PBase : Set) {A B : Set} {{_ : WholePart A B}} {{_ : DenomExp PBase A}}
+  -> (d : ℕ) -> (ν : B -> ℕ) -> (factor : A -> ℕ -> A) -> DenomExp Base A
+denomexp-ramified PBase {A} {B} d ν factor = record { denomexp = dexp ; denomexp-factor = factor }
+  where
+    dexp : A -> ℕ
+    dexp a with denomexpBy PBase a
+    ... | zero = zero
+    ... | n@(suc _) = d * n Nat.∸ ν (to-whole {A} {B} (denomexp-factorBy PBase a n))
+
 -- ----------------------------------------------------------------------
 -- Show instances for the particular rings. Elements of 𝔻[ω] and
 -- 𝔻[√2,i] are shown by pulling out a common denominator exponent,

@@ -161,6 +161,76 @@ Alternatively, a `BaseName` instance gives a tag default names, used by
 `"recip (1 + omega)^4 * Omega 2 3 2 0"` or `\frac{1}{(1+i)^{2}}i`;
 the built-in tags have such instances.
 
+## The ξ-rings of Kliuchnikov–Schönnenbeck
+
+`Quantum.Synthesis.Ring.XiRings` provides every concrete global ξ-ring
+of [arXiv:2405.19302](https://arxiv.org/abs/2405.19302) (Tables 2.1–2.3,
+4.1, 7.1 and 7.2), with a `DenomExp` tag for its denominator ξ. A ξ-ring
+is ℛξ = {z/ξᵏ : z ∈ 𝒪}, where (ξ)ᵈ = (p) for a rational prime p.
+
+| field | ξ | p, d | carrier | tag |
+|---|---|---|---|---|
+| ℚ | 2 | 2, 1 | `Dyadic` | `TwoBase` |
+| ℚ(i) | 1+i | 2, 2 | `DComplex` | `OnePlusIBase` |
+| ℚ(√2) | √2, 2+√2 | 2, 2 | `DRootTwo` | `SqrtTwoBase`, `TwoPlusRootTwoBase` |
+| ℚ(ζ₈) | 1+ζ₈ | 2, 4 | `DOmega` | `OnePlusOmegaBase` |
+| ℚ(ζ₁₆) | 1+ζ₁₆ | 2, 8 | `DZeta16` | `OnePlusZeta16Base` |
+| ℚ(ζ₃₂) | 1+ζ₃₂ | 2, 16 | `DZeta32` | `OnePlusZeta32Base` |
+| ℚ(cos π/8) | 2+2cos(π/8) | 2, 4 | `DCos8` | `TwoPlusTwoCos8Base` |
+| ℚ(cos π/16) | 2+2cos(π/16) | 2, 8 | `DCos16` | `TwoPlusTwoCos16Base` |
+| ℚ(cos π/32) | 2+2cos(π/32) | 2, 16 | `DCos32` | `TwoPlusTwoCos32Base` |
+| ℚ(ζ₃) | √−3 | 3, 2 | `TZeta3` | `SqrtMinusThreeBase` |
+| ℚ(ζ₉) | 1−ζ₉ | 3, 6 | `TZeta9` | `OneMinusZeta9Base` |
+
+The paper names no denominator for ℚ(ζ₉); 1−ζ₉ generates the prime over 3.
+(Its Table 4.1 writes 2+2cos(π/16) for ℚ(cos(π/8)), which is not in that
+field; Tables 2.3 and 7.1 give 2+2cos(π/8).)
+
+The new rings of integers are towers over rings that were already here,
+built from two type formers with tags for the generator:
+`Quantum.Synthesis.Ring.Quadratic` (a + bθ with θ² = s + tθ) and
+`Quantum.Synthesis.Ring.Cubic` (a + bθ + cθ² with θ³ = s). For example
+ℤ[ζ₁₆] = ℤ[ω][θ] with θ² = ω, ℤ[ζ₃₂] = ℤ[ζ₁₆][θ] with θ² = ζ₁₆,
+ℤ[ζ₉] = ℤ[ζ₃][θ] with θ³ = ζ₃, and ℤ[2cos(π/16)] = ℤ[2cos(π/8)][θ] with
+θ² = 2 + 2cos(π/8); the generic tags `SqrtGen` and `TwoCosHalf` extend
+the towers further. The ξ-rings invert p in the coefficients:
+ℤ[ζ₃, 1/√−3] = ℤ[⅓][ζ₃], using `Quantum.Synthesis.Ring.Localized`, the
+canonical fractions ℤ[1/ p ] for any p ≥ 2 (`Triadic = ℤ[1/ 3 ]`).
+Constants of the coefficient ring (½, √2, i, ω, ...) lift to the
+extensions, as do `adj` (with the conjugate of each generator), the
+`WholePart` structure, and the coefficient-ring bases 2, √2 and p.
+
+The ξ instances come from `denomexp-ramified` (`Quantum.Synthesis.Ring`):
+if a = X/pⁿ with n least, the least ξ-exponent is dn − ν(X), where ν < d
+is the ξ-valuation of the numerator. ν is computed in 𝒪/(p) from the
+numerator's coordinates in the power basis of the top generator: for
+the cyclotomic rings, as the multiplicity of x − 1 over 𝔽ₚ (the same
+code for 1+ζ₁₆, 1+ζ₃₂, √−3 and 1−ζ₉), and for the real rings, as the
+index of the first odd coordinate (θ = 2cos(π/2ᵏ) is a uniformizer).
+
+`Test.XiRings` and `Test.XiRingsTower` check the defining identities,
+the units ξᵈ/p (computed by hand for ζ₁₆, 2cos(π/8) and ζ₉), the
+independent oracle of `Test.Ring` (multiply by ξ, test integrality,
+reject every smaller exponent), the relations between the ξ-, √2- and
+p-exponents, agreement with `denomexp-by-search`, and gates from the
+paper: √T, T_y and the qutrit Hadamard are unitary with ξ-exponents 0,
+3 and 1, and the qutrit T gate diag(1, ζ₉, ζ₉⁻¹) is unitary of order 9.
+The degree-16 rings ℤ[ζ₃₂] and ℤ[2cos(π/32)] are too expensive for the
+oracle in the type checker, and are checked on elements of known
+valuation instead.
+
+`Quantum.Synthesis.Ring.Properties.Localized`, `.Quadratic` and `.Cubic`
+prove that ℤ[1/ p ] (p ≥ 2) and all quadratic and cubic extensions of
+commutative rings are commutative rings (the cubic associativity is
+split along the coordinates of the first factor, since the solver
+cannot normalise it in one step), and
+`Quantum.Synthesis.Ring.Properties.XiRings` instantiates these for all
+the new rings and their ξ-rings (`isCommutativeRing-DZeta16`, ...). Over
+dyadic coefficients the instantiation must avoid comparisons of equal
+but syntactically different instance terms, which make the type checker
+evaluate the ring operations on variables and exhaust memory; that
+module explains the workaround.
+
 ## Overloading
 
 Operators are overloaded with instance arguments, e.g. `_+_ : {{SemiRing A}} → A → A → A`.
