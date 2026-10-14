@@ -15,13 +15,12 @@
 --
 -- * Haskell has an instance ShowLaTeX (Matrix n m a) for all a, which
 --   is overlapped by the instances for matrices over DOmega and
---   DRComplex (these pull out a common denominator exponent). Agda
---   does not support overlapping instances, so there are instances for
---   matrices over each particular entry type (ℤ, ℚ, Dyadic, Float,
---   SymReal, ZOmega, Z2 [ω], ZRootTwo, DRootTwo, QRootTwo, ZComplex,
---   DComplex, QComplex, CDouble, ZRootTwo [i], QRComplex, TwoLevel,
---   DOmega, DRComplex). For other entry types, use the generic
---   function showlatex-Matrix.
+--   DRComplex (these pull out a common denominator exponent). Instead,
+--   there are instances for matrices over each particular entry type
+--   (ℤ, ℚ, Dyadic, Float, SymReal, ZOmega, Z2 [ω], ZRootTwo, DRootTwo,
+--   QRootTwo, ZComplex, DComplex, QComplex, CDouble, ZRootTwo [i],
+--   QRComplex, TwoLevel, DOmega, DRComplex). For other entry types, use
+--   the generic function showlatex-Matrix.
 --
 -- * The instances for A [√2] and A [i] require DecOrd A instead of
 --   Haskell's (Eq a, Num a): the comparisons with 0, 1, -1 in the
@@ -243,6 +242,15 @@ showlatex-denomexpBy-p {A} {B} Base base d a with denomexp-decomposeBy {A} {B} B
 
 showlatex-denomexp-p : {A B : Set} {{_ : WholePart A B}} {{_ : ShowLaTeX B}} {{_ : DenomExp SqrtTwoBase A}} -> ℕ -> A -> String
 showlatex-denomexp-p = showlatex-denomexpBy-p SqrtTwoBase "\\sqrt{2}"
+
+-- The same, with the base rendered by its BaseName instance, which
+-- parenthesizes a compound base under an exponent only, e.g.
+-- "\frac{1}{1+i}" but "\frac{1}{(1+i)^{2}}".
+showlatex-denomexpNamed-p : {A B : Set} (Base : Set) {{_ : BaseName Base}} {{_ : WholePart A B}} {{_ : ShowLaTeX B}} {{_ : DenomExp Base A}} -> ℕ -> A -> String
+showlatex-denomexpNamed-p {A} {B} Base d a with denomexp-decomposeBy {A} {B} Base a
+... | b , zero = showlatex-p d b
+... | b , suc zero = showParen d 7 ("\\frac{1}{" ++ latex-name {Base} 0 ++ "}" ++ showlatex-p 7 b)
+... | b , k = showParen d 7 ("\\frac{1}{" ++ latex-name {Base} 8 ++ "^{" ++ show k ++ "}}" ++ showlatex-p 7 b)
 
 -- The LaTeX representation of a matrix, given the representation of
 -- the entries.

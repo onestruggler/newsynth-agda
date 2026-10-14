@@ -994,6 +994,43 @@ showsPrec-DenomExpBy {A} {B} Base inverseBase d a with denomexp-decomposeBy {A} 
 showsPrec-DenomExp : {A B : Set} {{_ : WholePart A B}} {{_ : Show B}} {{_ : DenomExp SqrtTwoBase A}} -> ℕ -> A -> String
 showsPrec-DenomExp = showsPrec-DenomExpBy SqrtTwoBase "roothalf"
 
+-- Default names of a base tag, for printing without passing a string.
+-- recip-name names the inverse base and must bind more tightly than ^
+-- (an atom such as "half", or an application such as "recip (1 + i)").
+-- latex-name p renders the base itself at precedence p: 0 inside
+-- \frac{1}{...}, 8 under an exponent.
+record BaseName (Base : Set) : Set where
+  field
+    recip-name : String
+    latex-name : ℕ -> String
+open BaseName {{...}} public
+
+showsPrec-DenomExpNamed : {A B : Set} (Base : Set) {{_ : BaseName Base}} {{_ : WholePart A B}} {{_ : Show B}} {{_ : DenomExp Base A}} -> ℕ -> A -> String
+showsPrec-DenomExpNamed {A} {B} Base = showsPrec-DenomExpBy {A} {B} Base (recip-name {Base})
+
+instance
+  BaseNameSqrtTwo : BaseName SqrtTwoBase
+  BaseNameSqrtTwo .recip-name = "roothalf"
+  BaseNameSqrtTwo .latex-name _ = "\\sqrt{2}"
+
+  BaseNameTwo : BaseName TwoBase
+  BaseNameTwo .recip-name = "half"
+  BaseNameTwo .latex-name _ = "2"
+
+  BaseNameOnePlusI : BaseName OnePlusIBase
+  BaseNameOnePlusI .recip-name = "recip (1 + i)"
+  BaseNameOnePlusI .latex-name p = showParen p 6 "1+i"
+
+  BaseNameOnePlusOmega : BaseName OnePlusOmegaBase
+  BaseNameOnePlusOmega .recip-name = "recip (1 + omega)"
+  BaseNameOnePlusOmega .latex-name p = showParen p 6 "1+\\omega"
+
+-- a2ᵏ, for a dyadic fraction a, without a multiplication.
+dyadic-shift : Dyadic -> ℕ -> Dyadic
+dyadic-shift (Dyadic' a n _) k with k Nat.≤ᵇ n
+... | true = dyadic a (n Nat.∸ k)
+... | false = Dyadic' (shiftL a (k Nat.∸ n)) 0 _
+
 instance
   DenomExpDRootTwo : DenomExp SqrtTwoBase DRootTwo
   DenomExpDRootTwo .DenomExp.denomexp (RootTwo (Dyadic' _ k _) (Dyadic' _ l _)) = max (2 * k) (2 * l Nat.∸ 1)
@@ -1012,7 +1049,7 @@ instance
 
   DenomExpDyadicTwo : DenomExp TwoBase Dyadic
   DenomExpDyadicTwo .DenomExp.denomexp (Dyadic' _ k _) = k
-  DenomExpDyadicTwo .DenomExp.denomexp-factor a k = a * (1# + 1#) ^ k
+  DenomExpDyadicTwo .DenomExp.denomexp-factor = dyadic-shift
 
   DenomExpDRootTwoTwo : DenomExp TwoBase DRootTwo
   DenomExpDRootTwoTwo .DenomExp.denomexp (RootTwo a b) = max (denomexpBy TwoBase a) (denomexpBy TwoBase b)
@@ -1023,7 +1060,8 @@ instance
   DenomExpDOmegaTwo .DenomExp.denomexp (Omega a b c d) =
     max (max (denomexpBy TwoBase a) (denomexpBy TwoBase b))
         (max (denomexpBy TwoBase c) (denomexpBy TwoBase d))
-  DenomExpDOmegaTwo .DenomExp.denomexp-factor a k = a * (1# + 1#) ^ k
+  DenomExpDOmegaTwo .DenomExp.denomexp-factor (Omega a b c d) k =
+    Omega (dyadic-shift a k) (dyadic-shift b k) (dyadic-shift c k) (dyadic-shift d k)
 
   -- (1+i)^2 = 2i. After clearing powers of 2, a+bi is divisible
   -- by 1+i exactly when a and b have the same parity. Minimality of
@@ -1083,6 +1121,37 @@ instance
 
   DenomExpCplxTwo : {A : Set} {{_ : DenomExp TwoBase A}} -> DenomExp TwoBase (A [i])
   DenomExpCplxTwo = DenomExpCplx
+
+-- Build a DenomExp instance for a base δ by search, on a carrier A
+-- with ring of integers B (given by WholePart A B) that has an
+-- instance for a rational prime p (tag PBase), where δᵉ = p·u for a
+-- unit u of B. Then the least δ-exponent k of a satisfies
+-- e(n - 1) < k ≤ en, where n is the p-exponent of a, and it is found by
+-- testing whether aδᵏ is integral (a WholePart round trip) for these k.
+-- The integrality of δA is checked by evaluation where the instance is
+-- defined: the instance argument T (...) is found if it holds, and
+-- reported missing otherwise. The condition on e is not checked: a
+-- wrong e gives wrong exponents. (δ ∈ B follows from δᵉ = p·u if B is
+-- integrally closed, but not in general: in ℤ[√2][i], (1 + ω)⁴ = 2u for
+-- a unit u, but 1 + ω ∉ ℤ[√2][i].) Evaluating such an instance during
+-- type checking (e.g. in a refl proof) is slow, and on 𝔻[ω] can
+-- exhaust memory already for a single element; compiled code is fast.
+-- The instances given by formulas do not have this problem.
+denomexp-by-search : {Base : Set} (PBase : Set) {A B : Set} {{_ : Ring A}} {{_ : DecEq A}} {{_ : WholePart A B}}
+  {{_ : DenomExp PBase A}} -> (e : ℕ) -> (δA : A)
+  -> .{{_ : T (from-whole {A} {B} (to-whole δA) == δA)}} -> DenomExp Base A
+denomexp-by-search PBase {A} {B} e δA = record { denomexp = dexp ; denomexp-factor = λ a k -> a * δA ^ k }
+  where
+    integral : A -> Bool
+    integral x = from-whole {A} {B} (to-whole x) == x
+    -- The first argument is fuel.
+    search : ℕ -> ℕ -> A -> ℕ
+    search zero k _ = k
+    search (suc f) k x = if integral x then k else search f (suc k) (x * δA)
+    dexp : A -> ℕ
+    dexp a with denomexpBy PBase a
+    ... | zero = zero
+    ... | suc n = search (e Nat.∸ 1) (e * n + 1) (a * δA ^ (e * n + 1))
 
 -- ----------------------------------------------------------------------
 -- Show instances for the particular rings. Elements of 𝔻[ω] and

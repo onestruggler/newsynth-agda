@@ -142,9 +142,24 @@ vectors and matrices. As before, this operational interface has no law
 fields: instance authors must justify minimality and denominator clearing
 relative to the chosen `WholePart` instance.
 
+An instance can also be built by search: if δᵉ = p·u for a rational
+prime p with an existing instance (tag `PBase`) and a unit u, then
+`denomexp-by-search PBase e δ` tests the at most e candidate exponents
+allowed by the p-exponent. `Test.DenomExp` builds a base 1−i on
+`DComplex` this way, and checks a searched 1+ω instance against the
+formula on `DOmega`. Search-built instances are fine in compiled code,
+but slow to evaluate in the type checker (e.g. in `refl` proofs),
+especially on 𝔻[ω]; the formula instances do not have this problem.
+The base-2 instances scale by shifting dyadic exponents (`dyadic-shift`)
+rather than by multiplication.
+
 For explicit-base rendering, `showsPrec-DenomExpBy` takes an inverse-base
 expression (e.g. `"half"`), and `showlatex-denomexpBy-p` takes a base
 expression (e.g. `"2"`). Parenthesize compound expressions as needed.
+Alternatively, a `BaseName` instance gives a tag default names, used by
+`showsPrec-DenomExpNamed` and `showlatex-denomexpNamed-p`, e.g.
+`"recip (1 + omega)^4 * Omega 2 3 2 0"` or `\frac{1}{(1+i)^{2}}i`;
+the built-in tags have such instances.
 
 ## Overloading
 

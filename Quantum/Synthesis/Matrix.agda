@@ -34,7 +34,7 @@
 --
 -- * Haskell has overlapping Show instances for matrices over DRootTwo,
 --   DRComplex and DOmega (which pull out a common denominator
---   exponent). Since Agda does not support overlapping instances, we
+--   exponent). Instead of an overlapping generic instance, we
 --   give a Show instance for matrices over each particular entry type
 --   (ℤ, ℚ, Float, Z2, Dyadic, ZRootTwo, QRootTwo, ..., DOmega), built
 --   from the generic helper showsPrec-Matrix and showsPrec-DenomExp.
